@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adscite"
+version = "0.1"
+description = "Fetch and copy ADS BibTeX from DOI or arXiv ID"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "navaneethnpk", email = "npknavaneeth@gmail.com"}
+]
+dependencies = [
+    "requests",
+]
+
+[project.scripts]
+adscite = "adscite.main:main"
+
+[project.optional-dependencies]
+dev = ["ruff"]
