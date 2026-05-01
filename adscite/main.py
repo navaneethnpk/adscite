@@ -1,8 +1,10 @@
-import sys
 import argparse
 import subprocess
+import sys
+
 import requests
 
+from .citekey import change_citekey
 
 ADS_TOKEN = "zo1GaYNx0AFqk4CQ1dFSONpgbjYXyGTT0LqIJGL7"
 ADS_SEARCH = "https://api.adsabs.harvard.edu/v1/search/query"
@@ -70,6 +72,9 @@ def main():
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # Uncomment to use custom citekey (AuthorYYMM) implimentation
+    bibtex = change_citekey(bibtex)
 
     print(f"ADS Bibcode:\n{bibcode}\n")
     print(f"ADS BibTeX:\n{bibtex}\n")
