@@ -27,8 +27,20 @@ def load_token() -> str:
                 return line.split("=", 1)[1].strip()
     raise RuntimeError("ADS_TOKEN not set. Run: adscite --set-token 'your_token'")
 
+def clean_identifier(identifier: str, is_arxiv: bool = False) -> str:
+    """Strip URLs and prefixes, return clean DOI or arXiv ID"""
+    clean_id = identifier.strip()
+
+    if is_arxiv:
+        clean_id = clean_id.removeprefix("https://arxiv.org/abs/")
+    else:
+        clean_id = clean_id.removeprefix("https://doi.org/")
+
+    return clean_id
+
 def fetch_bibcode(identifier: str, headers: dict, is_arxiv: bool = False) -> str:
     """Fetch ADS bibcode from DOI or arXiv ID"""
+    identifier = clean_identifier(identifier, is_arxiv)
 
     if is_arxiv:
         query = f"arXiv:{identifier}"
