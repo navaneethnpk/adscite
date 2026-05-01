@@ -18,6 +18,7 @@ MONTH_MAP = {
 
 def extract_authors(bibtex: str) -> str:
     """Extract full author field value by counting braces"""
+
     start = re.search(r"author\s*=\s*\{", bibtex)
     if not start:
         return ""
@@ -38,6 +39,7 @@ def extract_authors(bibtex: str) -> str:
 
 def clean_name(name: str) -> str:
     """Handles accented letters in the LaTeX"""
+
     name = re.sub(r'\{\\["\'\^\`~=.]\s*([a-zA-Z])\}', r"\1", name)
     name = re.sub(r"\{\\ss\}", "s", name, flags=re.IGNORECASE)
     name = re.sub(r"\{\\[^}]+\}", "", name)
@@ -45,6 +47,8 @@ def clean_name(name: str) -> str:
 
 
 def make_citekey(bibtex: str) -> str:
+    """Generate AuthorYYMM citekey from BibTeX"""
+
     author_match = extract_authors(bibtex)
     year_match = re.search(r"year\s*=\s*(\d{4})", bibtex)
     month_match = re.search(r"month\s*=\s*([a-zA-Z]+)", bibtex)
@@ -61,6 +65,8 @@ def make_citekey(bibtex: str) -> str:
 
 
 def change_citekey(bibtex: str) -> str:
+    """Replace ADS bibcode key with AuthorYYMM citekey"""
+
     key = make_citekey(bibtex)
     new_bibtex = re.sub(r"(@\w+\{)[^,]+,", rf"\g<1>{key},", bibtex, count=1)
     return new_bibtex
