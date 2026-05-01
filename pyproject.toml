@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adscite"
-version = "0.4"
+version = "0.6"
 description = "Fetch and copy ADS BibTeX from DOI or arXiv ID"
 readme = "README.md"
 requires-python = ">=3.8"

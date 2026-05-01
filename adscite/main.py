@@ -128,7 +128,7 @@ def main():
         sys.exit(1)
 
     # Uncomment to use custom citekey (AuthorYYMM) implimentation
-    bibtex = change_citekey(bibtex)
+    # bibtex = change_citekey(bibtex)
 
     print(f"ADS Bibcode:\n{bibcode}\n")
     print(f"ADS BibTeX:\n{bibtex}\n")
