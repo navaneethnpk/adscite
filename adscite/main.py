@@ -1,18 +1,33 @@
 import argparse
+import os
 import subprocess
 import sys
+from pathlib import Path
 
 import requests
 
 from .citekey import change_citekey
 
-ADS_TOKEN = "zo1GaYNx0AFqk4CQ1dFSONpgbjYXyGTT0LqIJGL7"
+CONFIG_DIR  = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config")) / "adscite"
+CONFIG_FILE = CONFIG_DIR / "config"
+
 ADS_SEARCH = "https://api.adsabs.harvard.edu/v1/search/query"
 ADS_EXPORT = "https://api.adsabs.harvard.edu/v1/export/bibtex"
-HEADERS = {"Authorization": f"Bearer {ADS_TOKEN}"}
 
+def save_token(token: str):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(f"ADS_TOKEN={token}\n")
+    CONFIG_FILE.chmod(0o600)
+    print(f"Token saved to {CONFIG_FILE}")
 
-def fetch_bibcode(identifier: str, is_arxiv: bool = False) -> str:
+def load_token() -> str:
+    if CONFIG_FILE.exists():
+        for line in CONFIG_FILE.read_text().splitlines():
+            if line.startswith("ADS_TOKEN="):
+                return line.split("=", 1)[1].strip()
+    raise RuntimeError("ADS_TOKEN not set. Run: adscite --set-token 'your_token'")
+
+def fetch_bibcode(identifier: str, headers: dict, is_arxiv: bool = False) -> str:
     """Fetch ADS bibcode from DOI or arXiv ID"""
 
     if is_arxiv:
@@ -21,7 +36,7 @@ def fetch_bibcode(identifier: str, is_arxiv: bool = False) -> str:
         query = f"doi:{identifier}"
 
     params = {"q": query, "fl": "bibcode", "rows": 1}
-    response = requests.get(ADS_SEARCH, headers=HEADERS, params=params)
+    response = requests.get(ADS_SEARCH, headers=headers, params=params)
     response.raise_for_status()
 
     docs = response.json().get("response", {}).get("docs", [])
@@ -31,11 +46,11 @@ def fetch_bibcode(identifier: str, is_arxiv: bool = False) -> str:
     return docs[0]["bibcode"]
 
 
-def fetch_bibtex(bibcode: str) -> str:
+def fetch_bibtex(bibcode: str, headers: dict) -> str:
     """Fetch BibTeX for a ADS bibcode"""
 
     params = {"bibcode": [bibcode]}
-    response = requests.post(ADS_EXPORT, headers=HEADERS, json=params)
+    response = requests.post(ADS_EXPORT, headers=headers, json=params)
     response.raise_for_status()
 
     export = response.json().get("export", "")
@@ -60,15 +75,33 @@ def main():
     parser = argparse.ArgumentParser(
         description="Fetch and copy ADS BibTeX from DOI or arXiv ID"
     )
-    parser.add_argument("identifier", help="DOI or arXiv identifier")
+    parser.add_argument("identifier", nargs="?", help="DOI or arXiv identifier")
     parser.add_argument(
         "--arxiv", action="store_true", help="treat ID as arXiv identifier"
     )
+    parser.add_argument(
+        "--set-token", metavar="TOKEN", help="save ADS API token"
+    )
     args = parser.parse_args()
 
+    if args.set_token:
+        save_token(args.set_token)
+        sys.exit(0)
+
+    if not args.identifier:
+        parser.print_help()
+        sys.exit(1)
+
     try:
-        bibcode = fetch_bibcode(args.identifier, is_arxiv=args.arxiv)
-        bibtex = fetch_bibtex(bibcode)
+        token = load_token()
+    except RuntimeError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    HEADERS = {"Authorization": f"Bearer {token}"}
+
+    try:
+        bibcode = fetch_bibcode(args.identifier, HEADERS, is_arxiv=args.arxiv)
+        bibtex = fetch_bibtex(bibcode, HEADERS)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
